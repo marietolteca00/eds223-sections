@@ -1,0 +1,114 @@
+---
+title: "wk0_discussion"
+format: html
+editor: visual
+---
+
+## Install Libaries
+
+```{r}
+library(here)
+library(janitor)
+library(tidyverse)
+library(sf)
+library(kableExtra)
+```
+
+## Load Data
+
+# R ead in the gdw.csv file as gdw_df (and point to the filepath with help of here())
+
+# Use the \|\> or %\>% operator to pipe your read_csv() output to clean_names()
+
+```{r}
+gdw_df <- read_csv(here("data","gdw.csv")) %>% 
+  # Converting variable names to lower snake case
+  clean_names()
+
+```
+
+# Data Exploration
+
+##Print Head (only 10 columns)
+
+```{r}
+head(gdw_df, n=10) %>% 
+  kable()
+```
+
+## Print Tail
+
+```{r}
+head(gdw_df, n=10) %>% 
+  kable()
+```
+
+## Print the number of rows and number of columns in gdw_df
+
+```{r}
+# Dimension
+dim(gdw_df)
+# Number of rows
+nrow(gdw_df)
+
+# Number of columns
+ncol(gdw_df)
+```
+
+## Print the column names in gdw_df
+
+```{r}
+names(gdw_df)
+```
+
+# Index, Summarize, Subset Data
+
+##Use indexing brackets to extract the gdw_df column containing country names as a vector and data frame
+
+```{r}
+# Data Frame
+country_df <- gdw_df[, "country"]
+
+# Vector 
+country_vec <- gdw_df[["country"]]
+```
+
+## Use group_by() and summarise() to find the number of dams by dam type in gdw_df
+
+```{r}
+num_dam <- gdw_df %>%
+  group_by(dam_type) %>% 
+  summarise(count=n()) %>% 
+  ungroup()
+```
+
+## Make a subset called sub_dam that only contains entries for dam_type == "Dam"
+
+```{r}
+sub_dam <- gdw_df %>% 
+  subset(dam_type == "Dam")
+```
+
+## Re-order gdw_df by ascending order of installation year
+
+```{r}
+gdw_df %>% 
+  arrange(year_dam)
+```
+
+# Data Visualization
+
+## Make a bar graph of average height of dam/barrier in meters (dam_hgt_m) by country
+
+```{r}
+gdw_df |>
+  group_by(country) |>
+  summarize(mean_dam_hgt_m = mean(dam_hgt_m, na.rm = TRUE)) |>
+  ungroup() |> 
+  ggplot(aes(x = country, y = mean_dam_hgt_m)) +
+    geom_bar(stat = "identity") +
+    labs(x = "Country",
+         y = "Average height of dam/barrier in meters") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+```

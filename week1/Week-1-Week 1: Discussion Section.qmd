@@ -1,0 +1,142 @@
+---
+title: "Week-1-Week 1: Discussion Section"
+format: html
+---
+
+## Learning Objectives
+
+-   Read in spatial objects with st_read() and read_stars()
+-   Create map with single spatial object
+-   Create map with multiple spatial objects
+-   Use different types of tmap plotting formats (e.g. tm_polygons(), tm_fill(), tm_dots(), etc.)
+-   Include essential map elements (e.g. scale bar & north arrow or graticules)
+-   Create an interactive map
+-   Challenge: Reproduce map using ggplot2 instead of tmap
+
+```{r}
+library(here)
+library(tidyverse)
+library(sf)
+library(stars)
+library(tmap)
+```
+
+### Read in the spatial objects for Rapa Nui:
+
+-   `ei_points`: file contains several points on the island
+-   Use the pipe operator to filter() output for points representing volcanoes
+-   `ei_elev`: raster with elevation data
+-   `ei_borders`: polygon with the island outline
+-   `ei_roads`: lines contains a road network for the island
+
+```{r}
+ei_points <- st_read(here("week-1","data", "easter_island", "ei_points.gpkg")) |> 
+  filter(type == "volcano")
+ei_elev <- read_stars(here("week-1", "data", "easter_island", "ei_elev.tif"))
+ei_borders <- st_read(here("week-1", "data", "easter_island", "ei_border.gpkg"))
+ei_roads <- st_read(here("week-1", "data", "easter_island", "ei_roads.gpkg"))
+```
+
+# 2. Create a single-object map with tmap 
+
+## Create a map of the outline Rapa Nui using tm_shape() + tm_borders()
+
+```{r}
+# Add Easter Island vector in default gray
+tm_shape(ei_borders) +
+  tm_borders() +
+# Set general map layout options
+  tm_layout(main.title = "Easter Island")
+```
+
+## 3. Create a multiple-object map with tmap
+
+-   Expand on your single-object map to create a map of Rapa Nui and…
+
+-   …denote the island’s borders and continuous elevation
+
+-   …denote the island’s volcanoes and roads
+
+-   …play with the color palette and essential map elements
+```{r}
+# Assign name to map
+# for the shape start off with elevation
+ei_map <- tm_shape(ei_elev) +
+  # Add Grid Lines (Lon + Lat lines) over the map
+  tm_graticules() +
+  # Draw the raster (elevation) with a color scale
+  tm_raster(col.scale = tm_scale_continuous(values = "-rd_yl_gn"), # color palette(“red, yellow, green”)
+            # Adding a legend- Legend Title
+            col.legend = tm_legend("Elevation (m asl)")) +
+  # Overlaying Island Borders
+  tm_shape(ei_borders) + 
+    tm_borders() +
+  
+  # Adding Road Layer
+  tm_shape(ei_roads) +
+    tm_lines() +
+  # Overlaying Points of Volcanoes
+  tm_shape(ei_points) +
+  # Adding symbols to points
+    tm_symbols(shape = 24,  # Traingle shape
+               size = "elevation", # assiging the map symbol size to the elevation attribute
+               size.legend = tm_legend("Volcanoes (m asl)")) + # Legend for these symbols
+  # Adding a North Arrow in the top right
+  tm_compass(position = c("right", "top")) +
+  # Adding scale bar
+  tm_scalebar() +
+  # Title of map
+  tm_title("Easter Island")
+
+
+# Printing map
+ei_map
+```
+
+## 4. Create an interactive map with tmap
+### Switch from the default "plot" mode to "view"
+
+```{r}
+# Convert default static map to interactive map
+tmap_mode("view")
+```
+
+```{r}
+# Interactive map can be viewed in the Viewer Pane
+ei_map
+```
+# 5. Create a multiple-object map with ggplot2
+There are MANY different ways to make maps in R, all with different pros/cons. Check out this resource for examples of what map making looks like in ggplot2, leaflet, and more!
+
+**As a bonus challenge, reproduce your multiple-object map from earlier using ggplot2!**
+
+```{r}
+# library(ggspatial)
+## Giving an error
+# ggplot() +
+#   # first add Easter Island borders
+#   geom_sf(data = ei_borders, color = "#212529") +
+#   # add elevation raster
+#   geom_stars(data = ei_elev) +
+#   scale_fill_distiller(name = "Elevation (m asl)", # legend title with units
+#                        palette = "RdYlGn",         # red-yellow-green palette (no need to reverse)
+#                        na.value = "lightblue") +  # set NA color (background ocean)
+#   # add road vector
+#   geom_sf(data = ei_roads, color = "#343a40") +
+#   # add volcano vector
+#   geom_point(data = ei_points, 
+#              aes(x = geom, y = geom, 
+#                  size = elevation), # point size depends on attribute value
+#              shape = 17,            # triangle
+#              color = "#22577a") +
+#   scale_size_continuous(name = "Volcanoes (m asl)") +       # legend title with units
+#   ggspatial::annotation_north_arrow(location = "br",        # bottom right
+#                                     which_north = "true") + # point to north pole
+#   ggspatial::annotation_scale(location = "bl",              # bottom left
+#                               width_hint = 0.5) +           # proportion of map area the scalebar should occupy
+#   labs(title = "Easter Island") +
+#   theme_minimal()
+```
+
+
+
