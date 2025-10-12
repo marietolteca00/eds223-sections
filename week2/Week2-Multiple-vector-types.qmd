@@ -1,0 +1,140 @@
+---
+title: "Week2-Multiple-vector-types"
+Author: "Marie Tolteca"
+Date: 10/10/2025
+format: html
+---
+
+In this section, we’ll explore key functions inside the sf package using data from Colombia. Colombia is considered one of the world’s most “megadiverse” countries, hosting close to 10% of the planet’s biodiversity. Per square kilometer, there are more bird, amphibian, butterfly, and frog species in Colombia than anywhere else on Earth. Here, ill-planned road development poses a significant threat to habitat fragmentation, wildlife movement, and water flows. The Colombian government has developed a broad set of guidelines for sustainable road development, called the Lineamientos de Infraestructura Verde Vial (LIVV) or Green Road Infrastructure Guidelines (GRI). The GRI is mandatory for all national roads across Colombia.
+
+**Learning Objectives**
+Use st_read() to read multiple vector data types
+Retrieve the CRS of a vector object with st_crs()
+Transform CRS and match across all vector data types with st_transform()
+Perform dplyr attribute manipulations on sf data
+
+```{r}
+library(tidyverse)
+library(sf)
+library(tmap)
+```
+
+Next, let’s download our data. Unzip and move this to your version-controlled R Project’s data folder.
+
+Read in the data for Colombia’s ecoregions, roads, and bird observations
+- Use rename() to rename the columns decimal_longitude and decimal_latitude to long and lat in the bird observation dataset
+- Use st_as_sf() to convert the bird observation dataset into an sf object
+```{r}
+#aves <- read_csv(here::here("data","wk2","dataves.csv"))
+#Before renaming columns - lat and lon have their own column. With st_as_sf 
+# it now creates a column called geometry that combines both columns into one
+
+```
+
+
+```{r}
+# Reading Colombia shapefile
+col <- st_read(here::here("data","wk2","Colombia","Colombia.shp"))
+
+# Read in Shapefile Roads in Columbia
+roads <- st_read(here::here("data","wk2","RDLINE_colombia", "RDLINE_colombia.shp"))
+
+# Read in CSV
+aves <- read_csv(here::here("data","wk2","dataves.csv")) %>% 
+  # Easier to read in dataframe
+  as_tibble() %>% 
+  # Rename Columns
+  rename(long = decimal_longitude,
+         lat = decimal_latitude) %>% 
+  # Change Coordinates into spatial object
+  st_as_sf(coords = c("long", "lat"), crs = 4326) # click on metadata which EPSG to use
+```
+
+
+## 2. View class and geometry type
+Check the class() of all vector objects (including the spatially-enabled bird observation dataset)
+Use st_geometry_type() to peak at the geometry type
+```{r}
+class(col)
+class(roads)
+class(aves)
+```
+```{r}
+# Checking information on each variable
+unique(st_geometry_type(col))
+unique(st_geometry_type(roads))
+unique(st_geometry_type(aves))
+
+```
+## 3. Select a macro ecoregion of interest
+Use filter() to select a macro region of interest from N1_MacroBi in Colombia’s ecoregions dataset
+Plot the subset using tmap
+```{r}
+col_ven <- col %>% 
+  filter(N1_MacroBi == "Colombia Venezuelan")
+
+tm_shape(col_ven) +
+  tm_polygons() +
+  tm_title("Colombia Venezuelan")
+```
+## 4. Play with coordinate reference system (CRS)
+First, let’s use st_crs() to check the CRS and it’s units.
+```{r}
+# View CRS of each object
+st_crs(col)
+st_crs(roads)
+st_crs(aves)
+
+# View units of each object CRS 
+st_crs(col)$units
+st_crs(roads)$units
+st_crs(aves)$units
+
+```
+
+Say, you want to remove the CRS of an object, in order to “disable” its spatial features. Setting the CRS to NA with st_crs() <- NA is a brute force way to remove a CRS and “corrupt” a spatial object. Let’s do it the right way!
+
+Extract the longitude and latitude from the geometry column and use st_drop_geometry()
+**moving data from shp into a csv | This will only work with this pipe operator `( %>% )` **
+```{r}
+
+aves_df_st_coords <- aves %>%
+  dplyr::mutate(lon = st_coordinates(.)[,1], # Assign first matrix item to "lon" : First Entry
+                lat = st_coordinates(.)[,2])  %>% # Assign second matrix item to "lat" : Second Entry
+  st_drop_geometry() # Remove geometry column now that it's redundant
+
+```
+
+Convert long and lat into a geometry again with st_as_sf() to obtain a proper sf data frame
+
+```{r}
+aves_df_purrr <- aves |>
+  st_as_sf(coords = c("lon", "lat"), crs = 4326)
+```
+
+## 5. Make a map
+- Check that the CRS of the ecoregions and roads datasets match
+- Transform CRS of the bird observations dataset using st_transform() to match with the other datasets
+- Use tmap to plot the ecoregions, roads, and bird observations together
+```{r}
+# Boolen check if CRS match between 2 datasets
+st_crs(col) == st_crs(roads)
+```
+```{r}
+# Transform bird observation dataset into same CRS as other Colombia dataset
+aves <- st_transform(aves, crs = st_crs(col))
+```
+
+```{r}
+tm_shape(col) +
+  tm_polygons() +
+  tm_shape(roads) +
+  tm_lines() +
+  tm_shape(aves) +
+  tm_dots() +
+  tm_title("Colombia ecoregions, roads,\nand bird observations")
+```
+
+
+
+
