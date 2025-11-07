@@ -1,0 +1,6 @@
+---
+title: "Practice_raste_operations_vectors"
+author: "Marie Tolteca"
+format: html
+---
+
