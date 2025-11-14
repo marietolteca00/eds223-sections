@@ -3,7 +3,7 @@
 .Rapp.history
 # Adding .DS_Store
 .DS_Store
-
+/data
 
 # Session Data files
 .RData
