@@ -1,0 +1,62 @@
+---
+title: "Discussion8"
+format: html
+---
+
+# Import Library
+```{r, message=FALSE}
+library(terra)
+library(sf)
+library(tidyverse)
+library(here)
+library(tmap)
+```
+
+
+# Import Data
+```{r}
+
+landsat <- list.files(here::here("data", "week8(2)"), # Grab data from here
+                  #anything before tiff (*)
+                  pattern = glob2rx("*.tif$"), 
+                  # Entire file path
+                  full.names = TRUE)
+
+landsat <- rast(landsat[1])
+
+```
+
+```{r}
+names(landsat) <- c("blue", "green", "red", "NIR", "SWIR1", "SWIR2")
+
+ndvi_fun <- function(nir, red){
+  (nir - red) / (nir + red)
+}
+
+ndvi <- lapp(landsat[[c(4, 3)]], fun = ndvi_fun)
+
+ndvi
+
+```
+
+
+```{r}
+create_ndvi_layer <- function(i){
+  landsat <- rast(files[i])
+  names(landsat) <- c("blue", "green", "red", "NIR", "SWIR1", "SWIR2")
+  ndvi <- lapp(landsat[[c(4, 3)]], fun = ndvi_fun)
+  return(ndvi)
+}
+```
+
+
+```{r}
+names(landsat)
+```
+
+
+```{r}
+test <- create_ndvi_layer(1)
+```
+
+
